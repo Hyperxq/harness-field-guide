@@ -254,7 +254,7 @@
       <li><a href="#pipeline">06 Pipeline</a></li>
       <li><a href="#triage">07 Triage</a></li>
       <li><a href="#turn">08 One turn</a></li>
-      <li><a href="#gates">09 Gates</a></li>
+      <li><a href="#gates">09 Verification</a></li>
       <li><a href="#commands">10 Commands</a></li>
       <li><a href="#yours">11 Build yours</a></li>
     </ol>
@@ -352,6 +352,7 @@
         <div class="lfiles">openspec/changes/{change}/<br>.sdd/state/{change}.json</div>
       </div>
     </div>
+    <p class="note"><strong>And the harness polices itself.</strong> The hook layer doesn't only watch the agent — it points inward too. A validator script enforces a size budget on the constitution (new subsystems must enter as small pointers to contract files, never as resident bloat), checks that mirrored tables across files stay in sync, and pipeline-guard refuses to launch any phase whose prerequisites are missing from persisted state. The harness treats its own configuration as code under review — that's what keeps a living system from decaying into a junk drawer.</p>
   </section>
 
   <!-- 04 -->
@@ -509,6 +510,9 @@ flowchart TB
     </div>
     <p class="guarantee">Dotted lines = the architecture baseline being injected read-only into explore, propose, and design — those phases <em>consult</em> the project's architecture, they never mutate it. The dashed node (publish) is conditional: it only runs when the idea was born in the harness and needs tickets created upstream. Both iteration loops (plan verify → spec, verify in-loop → apply) are capped at 3 before a human is pulled in.</p>
 
+    <h3>🗺️ The living map — watching it all happen</h3>
+    <p>Every phase you just saw also feeds a <strong>living visual map</strong>. After each phase completes, a visualization skill re-renders one stable-URL page per change: the problem and scope, every requirement with progress dots (spec'd → implemented → verified), the architecture diagrams, the slices, and the build board. It's the harness's observability layer — you don't ask "where are we?", you open the map. It's resilient by design: if session state is ever lost, a rebuild mode reconstructs the entire map from memory, spec files, tickets, and git. And it's non-blocking — a broken map never halts the pipeline. The page you're reading right now grew out of that same skill's design system, which is the kind of dogfooding a living harness should be doing.</p>
+
     <h3>What each planning phase does — and why it exists</h3>
     <div class="tablewrap">
       <table>
@@ -595,38 +599,31 @@ sequenceDiagram
 
   <!-- 09 -->
   <section id="gates">
-    <span class="eyebrow">09 · The gates</span>
-    <h2>Trust the model, verify the work</h2>
-    <p>Gates are checkpoints that can halt or reroute the pipeline. Each asks a different question — and the reviewers are always independent agents that never saw the author's reasoning.</p>
+    <span class="eyebrow">09 · Verification</span>
+    <h2>Three checkpoints, because "wrong" has three shapes</h2>
+    <p>Most workflows verify once, at the end. This harness verifies <strong>three times, at three altitudes</strong> — and it's not paranoia, it's the same logic as the test pyramid: unit, integration, and end-to-end tests all exist because each catches a failure the others structurally <em>cannot</em> see. Same here. A plan can be insufficient. A slice can drift from its spec. A finished change can pass every test and still fail the problem. Different failure, different moment, different reviewer.</p>
+
+    <h3>1 · 🚪 Verify the plan — before a single line of code</h3>
+    <p>After slicing, the plan faces <strong>two blind judges</strong>, each with a different responsibility. <strong>Judge A checks problem fit</strong>: does this plan actually solve the stated problem, inside the stated scope? <strong>Judge B simulates being the executor</strong>: "if I had to build from these artifacts alone — no conversation, no shared context — could I? What's missing, ambiguous, undecided?" That no-context simulation isn't theater: sub-agents really are born without memory, so a plan that only works with the planner's context in your head is a plan that <em>will</em> fail in execution. Alongside the judges, the <strong>steward's foresight</strong> — the voice of conscience — writes the north-star memo: the <em>outcome</em> this change is chasing ("users stop losing drafts", not "an autosave endpoint exists"), so there is something honest to reckon against at the end. Gaps route back to the exact phase that owns them, max 3 rounds. A gap found here costs minutes.</p>
+
+    <h3>2 · 🧪 Verify in the loop — while building</h3>
+    <p>The sensors. After every slice batch: run the real tests, hold the slice against its acceptance criteria and REQ-IDs, report with evidence. Fast and delta-focused — a sensor on the production line, not an inspection at the exit. A failure gives the executor one fix attempt; three failures escalate to a human, so the loop can never spin forever. The payoff: drift gets caught while it is <em>one slice old</em> and cheap to fix, instead of being discovered at the end, fossilized under ten more slices built on top of it.</p>
+
+    <h3>3 · 🏁 Verify the whole — before archive</h3>
+    <p>Three movements, in strict order. First, a <strong>simplify pass</strong> cleans the full diff — duplication, dead weight, over-engineering. It runs <em>before</em> the verdict so the verdict judges the code that will actually ship, and it can afford to be aggressive precisely because final verification comes right after it as a safety net. Then <strong>verify final</strong> checks every requirement end-to-end — and when the change is large or touches a sensitive area, it summons <strong>two adversarial judges with different responsibilities</strong>, blind, armed with the spec and the diff alone, each attacking from their own lens. Finally the circle closes: the <strong>architecture audit</strong> asks whether the change violated the baseline, and the <strong>steward returns for the reckoning</strong>, holding the result against its own north-star memo from checkpoint 1 — we said we were chasing this outcome: did we deliver it? Is it usable? Is it significant — or just code that passes tests? What only a human can judge, it escalates instead of faking a verdict.</p>
+
     <div class="tablewrap">
       <table>
-        <thead><tr><th scope="col">Gate</th><th scope="col">When</th><th scope="col">The question it asks</th><th scope="col">If it fails</th></tr></thead>
+        <thead><tr><th scope="col">Checkpoint</th><th scope="col">What only it can catch</th><th scope="col">Who judges</th><th scope="col">Cost of catching it here</th></tr></thead>
         <tbody>
-          <tr><td class="flowid">🚪 Plan verify</td><td>After slicing, before building</td><td>Is this plan sufficient? Two blind judges: one checks problem fit, one simulates being the executor</td><td>Routes back to the exact phase that has the gap</td></tr>
-          <tr><td class="flowid">🧪 Verify in-loop</td><td>After each slice batch</td><td>Does the code match the spec, with real test evidence?</td><td>Fix attempt; 3 strikes → human</td></tr>
-          <tr><td class="flowid">🧹 Simplify</td><td>Start of /evaluate</td><td>Is there duplication, dead weight, or over-engineering in the full diff?</td><td>Applies safe cleanups; non-blocking</td></tr>
-          <tr><td class="flowid">🏁 Verify final</td><td>Before archive</td><td>Does the whole change satisfy every requirement end to end?</td><td>Re-spec or re-design, by failure category</td></tr>
-          <tr><td class="flowid">🧭 Steward</td><td>Post-design and pre-archive</td><td>Are we solving the <em>original problem</em> — or just shipping code that passes tests?</td><td>Halts with an outcome gap; escalates "is it usable?" to the human</td></tr>
-          <tr><td class="flowid">🏛️ Architecture audit</td><td>Before archive (M/L)</td><td>Did the change violate the architecture baseline?</td><td>Blocks archive until reconciled — or overridden with a persisted reason</td></tr>
-          <tr><td class="flowid">⚔️ Adversarial review</td><td>Large or sensitive changes</td><td>Two independent judges attack the diff — blind, spec-only</td><td>Fix iterations; unresolved findings need a human decision</td></tr>
+          <tr><td class="flowid">🚪 Plan</td><td>A plan that can't be executed without context — or solves the wrong problem</td><td>Two blind judges + steward foresight</td><td>Minutes — nothing is built yet</td></tr>
+          <tr><td class="flowid">🧪 In-loop</td><td>A slice that drifted from its spec</td><td>The sensor, with real test evidence</td><td>One slice — small blast radius</td></tr>
+          <tr><td class="flowid">🏁 Final</td><td>A whole that doesn't hold together — or passes every test without solving the problem</td><td>Final verifier + two adversarial judges + arch audit + steward reckoning</td><td>Hours — but the alternative is production</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Four of these deserve a closer look, because they carry the philosophy of the whole system.</p>
 
-    <h3>📡 The sensors — verify in-loop</h3>
-    <p>During <code>/build</code>, every slice batch passes through a fast, delta-focused verification: run the real tests, hold the slice against its acceptance criteria and REQ-IDs, report with evidence. Think of them as sensors on a production line, not a final inspection at the exit. A failure gives the executor a fix attempt; three failures escalate to a human — the loop is never allowed to spin forever. The payoff: drift gets caught while it is <em>one slice old</em> and cheap to fix, instead of being discovered at the end, fossilized under ten more slices built on top of it.</p>
-
-    <h3>🙈 The blind judges</h3>
-    <p>A blind judge is an independent sub-agent that receives <em>only</em> the artifacts under review — the spec, the diff, the acceptance criteria — never the author's reasoning, never the coordinator's conversation, never the other judge's opinion. In plan-verify, one judge checks problem fit ("does this plan solve the stated problem?") while the other simulates being the executor ("could I build this with zero questions?"). In adversarial review, two judges attack the final diff armed with the spec alone. The blindness is the point: an evaluator that reads your logic inherits your blind spots and ends up agreeing with you. Two independent judges with <em>different lenses</em> catch failures that two copies of the same reviewer never would.</p>
-
-    <h3>🧭 The voice of conscience — the steward</h3>
-    <p>The steward is born during <code>/plan</code>: right after design, it writes the <strong>north-star memo</strong> — the <em>outcome</em> this change is chasing, as opposed to the outputs it will produce ("users stop losing drafts", not "an autosave endpoint exists"). At the very end, before archive, it returns for the <strong>reckoning</strong>: did we deliver on the <em>original</em> problem? Is it usable? Is it significant — or is it just code that passes tests? It answers what it can analyze, and for the questions only a human can judge, it escalates instead of faking a verdict. Why it exists: verification proves the code matches the spec — the conscience proves the spec still matched the problem. On long changes, those two drift apart in silence.</p>
-
-    <h3>🧹 Why simplify runs before the final verdict</h3>
-    <p>Order is everything here, for two reasons. First, the final verification must judge <em>the code that will actually ship</em> — cleaning up after the verdict would invalidate the verdict. Second, simplify is allowed to be aggressive precisely <em>because</em> the final verify runs after it as a safety net: if a cleanup accidentally changes behavior, the gate catches it. And the two never mix concerns — simplify hunts quality (duplication, dead weight, over-engineering, code at the wrong altitude across the <em>full</em> diff, not slice by slice), while verify hunts correctness. A reviewer asked to do both does both badly.</p>
-
-    <p class="note"><strong>Why so many?</strong> Each gate exists because a specific failure once slipped through without it. Verification tells you the code matches the spec; the steward tells you the spec matched the problem. Different failures, different gates.</p>
+    <p class="note"><strong>Why so many, and why all different?</strong> Because <em>redundancy</em> checks the same thing twice, while <em>layering</em> checks different things once — and only layering scales. The reviewers differ (every judge is blind: artifacts only, never the author's reasoning, never each other's opinions — an evaluator that reads your logic inherits your blind spots). The questions differ: sufficiency, then fidelity, then wholeness. And the timing puts each check as close as possible to the mistake it can catch, where fixing is cheapest. Remove any one layer and a specific class of failure ships in silence.</p>
   </section>
 
   <!-- 10 -->
