@@ -235,7 +235,7 @@
   <header class="page">
     <span class="kicker">Field guide · For Claude Code users</span>
     <h1>You don't just use Claude Code.<br>You <span>harness</span> it.</h1>
-    <p class="lede">Out of the box, Claude Code is a very capable generalist that forgets everything between sessions and does whatever each prompt asks. A <strong>harness</strong> is the layer you build around it — rules, skills, sub-agents, hooks, and persistent memory — that turns "a chat that writes code" into a disciplined engineering system. This page maps one real, production harness so you can see what each piece does and why it exists.</p>
+    <p class="lede">Out of the box, Claude Code is a very capable generalist that forgets everything between sessions and does whatever each prompt asks. A <strong>harness</strong> is the layer you build around it — rules, skills, sub-agents, hooks, and persistent memory — that turns "a chat that writes code" into a disciplined engineering system. This page maps one real, production harness: what each piece does, why it exists, and the <strong>software-craftsmanship ideas</strong> it's all built on. And one thing before you dive in — this harness is <strong>alive</strong>: what you're reading is a snapshot of a system that grew failure by failure and will keep changing. Read it as a base to adapt, not a recipe to copy.</p>
     <div class="legend" role="list" aria-label="Color legend used across this page">
       <span class="chip" role="listitem"><span class="dot accent"></span>Orchestration &amp; planning</span>
       <span class="chip" role="listitem"><span class="dot info"></span>Execution &amp; knowledge</span>
@@ -247,15 +247,16 @@
   <nav class="toc" aria-label="Sections">
     <ol>
       <li><a href="#why">01 Why</a></li>
-      <li><a href="#blocks">02 Building blocks</a></li>
-      <li><a href="#senses">03 Memory &amp; sight</a></li>
-      <li><a href="#roles">04 Roles</a></li>
-      <li><a href="#pipeline">05 Pipeline</a></li>
-      <li><a href="#triage">06 Triage</a></li>
-      <li><a href="#turn">07 One turn</a></li>
-      <li><a href="#gates">08 Gates</a></li>
-      <li><a href="#commands">09 Commands</a></li>
-      <li><a href="#yours">10 Build yours</a></li>
+      <li><a href="#craft">02 Craftsmanship</a></li>
+      <li><a href="#blocks">03 Building blocks</a></li>
+      <li><a href="#senses">04 Memory &amp; sight</a></li>
+      <li><a href="#roles">05 Roles</a></li>
+      <li><a href="#pipeline">06 Pipeline</a></li>
+      <li><a href="#triage">07 Triage</a></li>
+      <li><a href="#turn">08 One turn</a></li>
+      <li><a href="#gates">09 Gates</a></li>
+      <li><a href="#commands">10 Commands</a></li>
+      <li><a href="#yours">11 Build yours</a></li>
     </ol>
   </nav>
 
@@ -290,8 +291,33 @@
   </section>
 
   <!-- 02 -->
+  <section id="craft">
+    <span class="eyebrow">02 · The craftsmanship underneath</span>
+    <h2>The harness invents nothing — it enforces what masters already knew</h2>
+    <p>Every mechanism in this system is a classic software-craftsmanship practice, automated and made impossible to skip. This is the real curriculum: if you understand these ten ideas, you understand the harness — and you're a better engineer even with the AI switched off.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Practice</th><th scope="col">The idea</th><th scope="col">Where the harness enforces it</th></tr></thead>
+        <tbody>
+          <tr><td class="flowid">🎯 Problem-first thinking</td><td>Never touch code until you can say who is hurting, what pain, and why now</td><td>Triage refuses to start without a problem statement and explicit scope</td></tr>
+          <tr><td class="flowid">🧾 Specification before code</td><td>Requirements as testable Given/When/Then scenarios with IDs that never change</td><td>The spec phase; every slice, test, and verdict traces back to a REQ-ID</td></tr>
+          <tr><td class="flowid">🪜 Right altitude</td><td>Think user flow → system → architecture → code, descending — never start at code</td><td>Explore and design enter the abstraction ladder at the height triage demands</td></tr>
+          <tr><td class="flowid">🚶 Walking skeleton</td><td>Build the thinnest end-to-end path first, to prove the architecture connects</td><td>Slice S-000, always built before any feature</td></tr>
+          <tr><td class="flowid">🍰 Vertical slicing</td><td>Every increment cuts through all layers and is demoable — no "backend first, UI someday"</td><td>SPIDR slicing in the slice phase</td></tr>
+          <tr><td class="flowid">🧪 Test-driven development</td><td>Tests derive from the spec and come before the code</td><td>Design maps each REQ-ID to its tests; strict TDD mode in apply</td></tr>
+          <tr><td class="flowid">📜 Decisions on the record</td><td>Significant choices written down with their <em>why</em> and the alternatives (ADRs)</td><td>The design phase; the best ADRs get promoted to project level on archive</td></tr>
+          <tr><td class="flowid">🙈 Independent review</td><td>The author never grades their own homework — and reviewers stay blind to the author's reasoning</td><td>The council, plan verify, adversarial review — every evaluator in the system</td></tr>
+          <tr><td class="flowid">⚖️ Ceremony proportional to risk</td><td>A typo fix and a payments change do not deserve the same process</td><td>Triage's XS→XL routing, plus the sensitive-area override</td></tr>
+          <tr><td class="flowid">📚 Continuous learning</td><td>Every finished change should teach the next one</td><td>Archive extracts lessons-learned into permanent memory</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><strong>This is why "AI is a tool" isn't a slogan here.</strong> The human's judgment lives inside these practices — the harness just makes them non-negotiable. Learn them and any agent becomes more powerful in your hands; skip them and no amount of tooling saves you.</p>
+  </section>
+
+  <!-- 03 -->
   <section id="blocks">
-    <span class="eyebrow">02 · The building blocks</span>
+    <span class="eyebrow">03 · The building blocks</span>
     <h2>Six layers, each answering one question</h2>
     <p>Everything in this harness is one of six kinds of thing. Claude Code provides the mechanisms; the harness is what you build with them.</p>
     <div class="stack">
@@ -328,9 +354,9 @@
     </div>
   </section>
 
-  <!-- 03 -->
+  <!-- 04 -->
   <section id="senses">
-    <span class="eyebrow">03 · Memory &amp; sight</span>
+    <span class="eyebrow">04 · Memory &amp; sight</span>
     <h2>Two MCP servers the whole harness leans on</h2>
     <p>An agent has two structural blindnesses: it <em>forgets</em> — everything dies with the context window — and it <em>can't see</em> a codebase cheaply — understanding structure through grep costs dozens of calls and a bloated context. The harness plugs in one MCP server for each, and almost every layer above depends on them.</p>
     <div class="scopegrid">
@@ -358,9 +384,9 @@
     <p class="note"><strong>Rule of thumb:</strong> codegraph answers "how is the code connected <em>today</em>?" — engram answers "what did we decide, and <em>why</em>?". The planner explores with codegraph; every phase persists to engram. One is a map you can redraw; the other is a diary you can't rewrite.</p>
   </section>
 
-  <!-- 04 -->
+  <!-- 05 -->
   <section id="roles">
-    <span class="eyebrow">04 · The operating model</span>
+    <span class="eyebrow">05 · The operating model</span>
     <h2>Planner, Executor, Evaluator — never the same mind</h2>
     <p>The harness splits every change into three roles. The <strong>Planner</strong> defines <em>what</em> to build. The <strong>Executor</strong> builds it. The <strong>Evaluator</strong> judges the result against the spec — and crucially, evaluators are launched <em>blind</em>: they see the artifacts, never the builder's reasoning, so they can't inherit its blind spots. Executor and Evaluator form a loop (build → verify → fix → verify) capped at 3 iterations before a human is pulled in.</p>
     <div class="diagram" aria-label="Diagram: the three roles and their feedback loop">
@@ -390,9 +416,9 @@ flowchart LR
     <p class="dg-hint">Drag to pan · use − / + to zoom · ⛶ for fullscreen.</p>
   </section>
 
-  <!-- 05 -->
+  <!-- 06 -->
   <section id="pipeline">
-    <span class="eyebrow">05 · The pipeline</span>
+    <span class="eyebrow">06 · The pipeline</span>
     <h2>SDD: spec-driven development, phase by phase</h2>
     <p>Three commands drive everything: <code>/plan</code> runs the Planner until a signed, verified plan exists; <code>/build</code> runs the Executor–Evaluator loop; <code>/evaluate</code> runs the final judgment before archiving. Every phase writes its artifact to memory before the next one starts.</p>
     <div class="diagram" aria-label="Diagram: the full SDD pipeline with its gates">
@@ -498,27 +524,11 @@ flowchart TB
         </tbody>
       </table>
     </div>
-    <h3>The techniques inside /plan</h3>
-    <p>The phases aren't improvised — each one applies a named engineering technique:</p>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th scope="col">Technique</th><th scope="col">Where</th><th scope="col">What it buys you</th></tr></thead>
-        <tbody>
-          <tr><td class="flowid">🪜 Abstraction ladder</td><td>explore → design</td><td>Planning starts at the altitude the problem demands — user flow → system → architecture → code — and <em>descends</em>. Big changes never start at code; that's how you get clever solutions to the wrong problem</td></tr>
-          <tr><td class="flowid">🧾 Given/When/Then + stable REQ-IDs</td><td>spec</td><td>Every requirement is a testable scenario with an ID that never changes, so slices, tests, and verification all trace back to the same contract</td></tr>
-          <tr><td class="flowid">📜 ADRs</td><td>design</td><td>Each substantive decision is recorded with its <em>why</em> and alternatives; the best get promoted to project level on archive, so future changes inherit the reasoning</td></tr>
-          <tr><td class="flowid">🍰 SPIDR vertical slicing</td><td>slice</td><td>Slices cut through <em>all</em> layers (UI to data) and each delivers something demoable — never "backend first, frontend someday"</td></tr>
-          <tr><td class="flowid">🚶 Walking skeleton</td><td>slice → apply</td><td>Slice S-000 is the thinnest end-to-end path, built <em>first</em>: it proves the architecture actually connects before any feature hangs off it</td></tr>
-          <tr><td class="flowid">🧪 Test derivation + strict TDD</td><td>design → apply</td><td>The design maps every REQ-ID to the tests that will prove it; in strict TDD mode the executor must write those tests before the code</td></tr>
-          <tr><td class="flowid">🙈 Anti-anchoring</td><td>every review</td><td>Judges and council personas receive only the artifacts under review — never the author's reasoning. An evaluator that reads your logic inherits your blind spots</td></tr>
-        </tbody>
-      </table>
-    </div>
   </section>
 
-  <!-- 06 -->
+  <!-- 07 -->
   <section id="triage">
-    <span class="eyebrow">06 · Triage</span>
+    <span class="eyebrow">07 · Triage</span>
     <h2>Not every change deserves the full ceremony</h2>
     <p>The first phase sizes the change and routes it. A typo fix should never pay the cost of a council review — and a payments change should never escape it. One override beats size: anything touching a <strong>sensitive area</strong> (auth, payments, privacy, data migration) is forced onto the heavyweight path no matter how small it looks.</p>
     <div class="tablewrap">
@@ -554,9 +564,9 @@ flowchart TB
     <p class="guarantee">Why it works: a single reviewer optimizes for one thing and goes blind to the rest. Parallel, independent lenses surface the tradeoffs <em>before</em> they're welded into code — and XS/S changes skip the council entirely, because that's triage doing its job: ceremony proportional to risk.</p>
   </section>
 
-  <!-- 07 -->
+  <!-- 08 -->
   <section id="turn">
-    <span class="eyebrow">07 · Anatomy of one turn</span>
+    <span class="eyebrow">08 · Anatomy of one turn</span>
     <h2>What actually happens when you type /plan</h2>
     <p>The coordinator never does the heavy lifting itself — it resolves context, launches a sub-agent with exactly the context it needs, then persists the result. That's the whole trick: a thin conversation thread that survives, and disposable workers that don't need to.</p>
     <div class="diagram" aria-label="Diagram: sequence of one /plan turn">
@@ -583,9 +593,9 @@ sequenceDiagram
     <p class="guarantee">Step 9 is why a crash, a context compaction, or tomorrow's fresh session can pick up exactly where this one stopped: state lives outside the conversation.</p>
   </section>
 
-  <!-- 08 -->
+  <!-- 09 -->
   <section id="gates">
-    <span class="eyebrow">08 · The gates</span>
+    <span class="eyebrow">09 · The gates</span>
     <h2>Trust the model, verify the work</h2>
     <p>Gates are checkpoints that can halt or reroute the pipeline. Each asks a different question — and the reviewers are always independent agents that never saw the author's reasoning.</p>
     <div class="tablewrap">
@@ -619,9 +629,9 @@ sequenceDiagram
     <p class="note"><strong>Why so many?</strong> Each gate exists because a specific failure once slipped through without it. Verification tells you the code matches the spec; the steward tells you the spec matched the problem. Different failures, different gates.</p>
   </section>
 
-  <!-- 09 -->
+  <!-- 10 -->
   <section id="commands">
-    <span class="eyebrow">09 · Daily driver</span>
+    <span class="eyebrow">10 · Daily driver</span>
     <h2>What you actually type</h2>
     <div class="tablewrap">
       <table>
@@ -638,9 +648,9 @@ sequenceDiagram
     </div>
   </section>
 
-  <!-- 10 -->
+  <!-- 11 -->
   <section id="yours">
-    <span class="eyebrow">10 · Build your own</span>
+    <span class="eyebrow">11 · Build your own</span>
     <h2>You don't need all of this on day one</h2>
     <p>This harness grew gate by gate, each piece added after a real failure. If you're starting yours, grow it in the same order the pain arrives:</p>
     <div class="tablewrap">
@@ -656,7 +666,7 @@ sequenceDiagram
         </tbody>
       </table>
     </div>
-    <p class="note"><strong>The takeaway:</strong> a harness is your engineering culture, written down where the agent can't ignore it. The model brings the intelligence; you bring the judgment — and the harness is how your judgment keeps working while you sleep.</p>
+    <p class="note"><strong>The takeaway: this harness is alive — and yours should be too.</strong> Everything on this page is a snapshot of a system that grew failure by failure and will keep evolving as the failures change. So don't copy it — <em>fork it</em>. Use it as a base: keep what solves problems you actually have, delete what doesn't, and let your own pain add the next gate. A harness is your engineering culture written down where the agent can't ignore it, and culture, by definition, is never finished.</p>
   </section>
 </main>
 
