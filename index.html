@@ -679,7 +679,52 @@ sequenceDiagram
 </script>
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+
+  // Mermaid bakes its theme in at render time, so we keep each diagram's
+  // source and re-render whenever the effective color scheme changes.
+  var sources = new Map();
+  document.querySelectorAll('pre.mermaid').forEach(function (el) {
+    sources.set(el, el.textContent);
+  });
+
+  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function isDark() {
+    var forced = document.documentElement.getAttribute('data-theme');
+    if (forced) return forced === 'dark';
+    return prefersDark.matches;
+  }
+
+  async function render() {
+    var dark = isDark();
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: dark ? 'dark' : 'neutral',
+      fontFamily: '"Avenir Next", "Segoe UI", system-ui, sans-serif',
+      themeVariables: dark
+        ? { darkMode: true, background: '#1C222B', primaryColor: '#2B333F',
+            primaryTextColor: '#EAE8E1', primaryBorderColor: '#40495A',
+            lineColor: '#A2ABB7', textColor: '#EAE8E1',
+            actorBkg: '#2B333F', actorTextColor: '#EAE8E1', actorBorder: '#40495A',
+            actorLineColor: '#77828F', signalColor: '#C9D2DC', signalTextColor: '#EAE8E1',
+            labelBoxBkgColor: '#2B333F', labelTextColor: '#EAE8E1',
+            loopTextColor: '#EAE8E1', sequenceNumberColor: '#14181F',
+            noteBkgColor: '#33291A', noteTextColor: '#EAE8E1', noteBorderColor: '#E2A94A',
+            clusterBkg: '#20272F', clusterBorder: '#40495A', titleColor: '#EAE8E1',
+            edgeLabelBackground: '#20272F' }
+        : { background: '#FFFFFF', lineColor: '#55606C', textColor: '#1B222C',
+            actorLineColor: '#8A93A0', signalColor: '#3B4550', signalTextColor: '#1B222C',
+            edgeLabelBackground: '#F5F3EC' }
+    });
+    for (var entry of sources) {
+      entry[0].removeAttribute('data-processed');
+      entry[0].textContent = entry[1];
+    }
+    await mermaid.run({ nodes: Array.from(sources.keys()) });
+  }
+
+  render();
+  if (prefersDark.addEventListener) prefersDark.addEventListener('change', render);
 </script>
 </body>
 </html>
