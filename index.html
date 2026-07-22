@@ -603,6 +603,48 @@ sequenceDiagram
     <h2>Three checkpoints, because "wrong" has three shapes</h2>
     <p>Most workflows verify once, at the end. This harness verifies <strong>three times, at three altitudes</strong> — and it's not paranoia, it's the same logic as the test pyramid: unit, integration, and end-to-end tests all exist because each catches a failure the others structurally <em>cannot</em> see. Same here. A plan can be insufficient. A slice can drift from its spec. A finished change can pass every test and still fail the problem. Different failure, different moment, different reviewer.</p>
 
+    <div class="diagram" aria-label="Diagram: the three verification checkpoints and how they connect">
+<pre class="mermaid">
+flowchart TB
+  subgraph CP1[🚪 Checkpoint 1 — the plan, before any code]
+    direction LR
+    PL[📋 the plan] --> JA{🙈 judge A, problem fit}
+    PL --> JB{🙈 judge B, executor with zero context}
+    PL --> FS{🧭 steward foresight}
+    FS -- writes --> NS[⭐ north-star memo, the outcome we chase]
+  end
+  JA -- gaps, max 3 --> BK[↩️ back to the phase that owns the gap]
+  JB -- gaps, max 3 --> BK
+  JA -- ready --> SLC
+  JB -- ready --> SLC
+  subgraph CP2[🧪 Checkpoint 2 — every slice, while building]
+    direction LR
+    SLC[🔨 slice built] --> SEN{📡 sensor, real tests + evidence}
+    SEN -- fail, max 3 --> SLC
+    SEN -- 3 strikes --> HU[🙋 human]
+  end
+  SEN -- pass --> SIM
+  subgraph CP3[🏁 Checkpoint 3 — the whole, before archive]
+    direction LR
+    SIM[🧹 simplify the full diff] --> FV{🏁 verify final, every REQ end to end}
+    FV --> ADV{⚔️ two adversarial judges, L or sensitive only}
+    ADV --> AA{🏛️ architecture audit}
+    AA --> RK{🧭 steward reckoning}
+  end
+  NS -. held against, did we deliver it .-> RK
+  RK --> AR[📦 archive + lessons]
+  classDef accent fill:#F5D78E,stroke:#8A5A10,color:#2A1F08
+  classDef info fill:#BBD5F0,stroke:#2B6CB0,color:#102A44
+  classDef boundary fill:#D9CFF0,stroke:#6B5CA5,color:#241C3A
+  classDef pending fill:#E8E6E0,stroke:#888,stroke-dasharray:5 4,color:#333
+  class PL,NS,SIM accent
+  class SLC,AR,BK,HU info
+  class JA,JB,FS,SEN,FV,AA,RK boundary
+  class ADV pending
+</pre>
+    </div>
+    <p class="guarantee">Purple diamonds = independent, blind reviewers. The dotted line is the conscience closing its own loop: the north-star written before building is exactly what the reckoning measures after. The dashed node only runs for large or sensitive changes.</p>
+
     <h3>1 · 🚪 Verify the plan — before a single line of code</h3>
     <p>After slicing, the plan faces <strong>two blind judges</strong>, each with a different responsibility. <strong>Judge A checks problem fit</strong>: does this plan actually solve the stated problem, inside the stated scope? <strong>Judge B simulates being the executor</strong>: "if I had to build from these artifacts alone — no conversation, no shared context — could I? What's missing, ambiguous, undecided?" That no-context simulation isn't theater: sub-agents really are born without memory, so a plan that only works with the planner's context in your head is a plan that <em>will</em> fail in execution. Alongside the judges, the <strong>steward's foresight</strong> — the voice of conscience — writes the north-star memo: the <em>outcome</em> this change is chasing ("users stop losing drafts", not "an autosave endpoint exists"), so there is something honest to reckon against at the end. Gaps route back to the exact phase that owns them, max 3 rounds. A gap found here costs minutes.</p>
 
