@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Field guide to a production Claude Code harness: building blocks, memory and sight, the SDD pipeline, gates, and how to grow your own.">
+<title>The Claude Code Harness — Field Guide</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+<style>
+  /* ============ Design tokens ============
+     Semantic triad carried through page + diagrams:
+       amber  = orchestration & planning
+       blue   = execution & knowledge
+       purple = gates & enforcement
+     Each hue ships two forms: decorative (borders, dots) and
+     -ink (text on the page ground, tuned to ≥ 4.5:1 in both themes). */
+  :root {
+    --ground: #FBFAF6;
+    --surface: #FFFFFF;
+    --surface-2: #F5F3EC;
+    --ink: #1B222C;
+    --muted: #55606C;
+    --line: #E4E1D6;
+    --line-strong: #C9C4B4;
+    --accent: #B7791F;
+    --accent-ink: #8A5A10;
+    --accent-soft: #FBF0DA;
+    --info: #2B6CB0;
+    --info-ink: #245F9E;
+    --info-soft: #E3EDF8;
+    --boundary: #6B5CA5;
+    --boundary-ink: #574685;
+    --boundary-soft: #ECE7F6;
+    --code-bg: #F1EEE5;
+    --danger: #B03427;
+    --focus: #245F9E;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #14181F; --surface: #1C222B; --surface-2: #20272F;
+      --ink: #EAE8E1; --muted: #A2ABB7; --line: #2B333F; --line-strong: #40495A;
+      --accent: #E2A94A; --accent-ink: #EAB768; --accent-soft: #322818;
+      --info: #7FB1E3; --info-ink: #93BEE9; --info-soft: #1C2B3D;
+      --boundary: #A99BD6; --boundary-ink: #B6AADD; --boundary-soft: #292338;
+      --code-bg: #242B36; --danger: #E58273; --focus: #93BEE9;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #14181F; --surface: #1C222B; --surface-2: #20272F;
+    --ink: #EAE8E1; --muted: #A2ABB7; --line: #2B333F; --line-strong: #40495A;
+    --accent: #E2A94A; --accent-ink: #EAB768; --accent-soft: #322818;
+    --info: #7FB1E3; --info-ink: #93BEE9; --info-soft: #1C2B3D;
+    --boundary: #A99BD6; --boundary-ink: #B6AADD; --boundary-soft: #292338;
+    --code-bg: #242B36; --danger: #E58273; --focus: #93BEE9;
+  }
+  :root[data-theme="light"] {
+    --ground: #FBFAF6; --surface: #FFFFFF; --surface-2: #F5F3EC;
+    --ink: #1B222C; --muted: #55606C; --line: #E4E1D6; --line-strong: #C9C4B4;
+    --accent: #B7791F; --accent-ink: #8A5A10; --accent-soft: #FBF0DA;
+    --info: #2B6CB0; --info-ink: #245F9E; --info-soft: #E3EDF8;
+    --boundary: #6B5CA5; --boundary-ink: #574685; --boundary-soft: #ECE7F6;
+    --code-bg: #F1EEE5; --danger: #B03427; --focus: #245F9E;
+  }
+
+  /* ============ Base ============ */
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    font-size: 1rem; line-height: 1.6; margin: 0; padding: 0 1.25rem 6rem;
+  }
+  main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 4.5rem; }
+
+  h1, h2, h3 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, serif;
+    text-wrap: balance; line-height: 1.15; margin: 0; font-weight: 700;
+  }
+  h1 { font-size: clamp(2rem, 5vw, 2.9rem); letter-spacing: -0.01em; }
+  h2 { font-size: clamp(1.35rem, 3vw, 1.7rem); }
+  p { margin: 0; max-width: 68ch; }
+  .lede { color: var(--muted); font-size: 1.1rem; line-height: 1.65; max-width: 60ch; }
+  .lede strong, .note strong { color: var(--ink); }
+  .eyebrow {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--accent-ink);
+  }
+  section { display: flex; flex-direction: column; gap: 1.1rem; scroll-margin-top: 5rem; }
+  section > .eyebrow { border-bottom: 1px solid var(--line); padding-bottom: 0.5rem; }
+
+  a { color: var(--info-ink); text-underline-offset: 0.15em; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+
+  code, .mono {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.86em;
+    background: var(--code-bg); padding: 0.12em 0.4em; border-radius: 5px;
+  }
+  th code, .band code { background: transparent; padding: 0; }
+
+  /* ============ Hero ============ */
+  header.page {
+    display: flex; flex-direction: column; gap: 1.1rem;
+    padding: 4.5rem 0 2.5rem; border-bottom: 2px solid var(--line-strong);
+  }
+  header.page .kicker {
+    display: inline-flex; align-items: center; gap: 0.5rem; width: max-content;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent-ink); background: var(--accent-soft);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    padding: 0.35rem 0.8rem; border-radius: 999px;
+  }
+  header.page h1 span { color: var(--accent-ink); font-style: italic; }
+
+  /* ============ Section nav ============ */
+  nav.toc {
+    position: sticky; top: 0; z-index: 20;
+    margin: 0 -1.25rem; padding: 0.6rem 1.25rem;
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav.toc ol {
+    list-style: none; margin: 0 auto; padding: 0; max-width: 960px;
+    display: flex; gap: 0.4rem; overflow-x: auto; scrollbar-width: thin;
+  }
+  nav.toc a {
+    display: inline-block; white-space: nowrap; text-decoration: none;
+    font-size: 0.8rem; font-weight: 650; color: var(--muted);
+    padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid transparent;
+  }
+  nav.toc a:hover { color: var(--ink); border-color: var(--line-strong); background: var(--surface); }
+
+  /* ============ Chips / legend ============ */
+  .legend { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.8rem; font-weight: 650; padding: 0.35rem 0.75rem;
+    border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface);
+  }
+  .chip .dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; flex: none; }
+  .dot.accent { background: var(--accent); }
+  .dot.info { background: var(--info); }
+  .dot.boundary { background: var(--boundary); }
+  .dot.pending { background: transparent; border: 2px dashed var(--accent); }
+
+  /* ============ Compare cards ============ */
+  .scopegrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .scopecard {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  .scopecard h3 { font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; font-size: 1rem; font-weight: 700; }
+  .scopecard ul { margin: 0; padding-left: 1.15rem; font-size: 0.93rem; display: flex; flex-direction: column; gap: 0.45rem; }
+  .scopecard.vanilla { border-style: dashed; }
+  .scopecard.vanilla h3 { color: var(--muted); }
+  .scopecard.harnessed { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); box-shadow: 0 1px 0 var(--line); }
+  .scopecard.harnessed h3 { color: var(--accent-ink); }
+  @media (max-width: 720px) { .scopegrid { grid-template-columns: 1fr; } }
+
+  /* ============ Diagrams: zoom + pan + faux fullscreen ============ */
+  .diagram {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 1.25rem; overflow: auto; max-height: 75vh; cursor: grab;
+  }
+  .diagram.dragging { cursor: grabbing; user-select: none; }
+  .diagram pre.mermaid { margin: 0; display: flex; justify-content: center; }
+  .zoomwrap { transform-origin: 0 0; width: fit-content; margin: 0 auto; transition: transform 0.15s ease; }
+  @media (prefers-reduced-motion: reduce) { .zoomwrap { transition: none; } }
+  .zoombar {
+    position: sticky; top: 0; left: 0; z-index: 5;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: color-mix(in srgb, var(--surface) 88%, var(--ground));
+    border: 1px solid var(--line-strong); border-radius: 10px;
+    padding: 0.3rem 0.55rem; margin-bottom: 0.5rem; width: max-content;
+  }
+  .zoombar button {
+    font: inherit; font-weight: 700; line-height: 1; width: 2.1rem; height: 2.1rem;
+    border: 1px solid var(--line-strong); border-radius: 8px;
+    background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  .zoombar button:hover { border-color: var(--accent-ink); color: var(--accent-ink); }
+  .zoombar span { font-size: 0.78rem; font-weight: 650; color: var(--muted); min-width: 2.8rem; text-align: right; font-variant-numeric: tabular-nums; }
+  .diagram.fauxfull { position: fixed; inset: 0; z-index: 50; max-height: none; height: auto; border-radius: 0; padding: 2rem; margin: 0; }
+  .diagram.fauxfull .zoombar { top: 0.5rem; }
+  body.noscroll { overflow: hidden; }
+  .dg-hint { font-size: 0.8rem; color: var(--muted); }
+
+  /* ============ Tables ============ */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 0.75rem 1rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: color-mix(in srgb, var(--surface-2) 55%, var(--surface)); }
+  th {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); background: var(--surface-2);
+  }
+  td.flowid { font-weight: 700; white-space: nowrap; }
+  td.flowid code { font-weight: 600; }
+  .guarantee { color: var(--muted); font-size: 0.88em; }
+
+  /* ============ Layer bands ============ */
+  .stack { display: flex; flex-direction: column; gap: 0.6rem; }
+  .band {
+    display: grid; grid-template-columns: 11rem 1fr 15rem; gap: 1.1rem;
+    padding: 1rem 1.2rem; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--surface); border-left: 5px solid var(--accent);
+  }
+  .band.info { border-left-color: var(--info); background: color-mix(in srgb, var(--info-soft) 40%, var(--surface)); }
+  .band.boundary { border-left-color: var(--boundary); background: color-mix(in srgb, var(--boundary-soft) 40%, var(--surface)); }
+  .band .lname { font-weight: 700; font-size: 0.98rem; }
+  .band .lname small { display: block; font-weight: 650; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 0.2rem; }
+  .band .lfiles { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.78rem; color: var(--muted); display: flex; flex-direction: column; gap: 0.2rem; }
+  .band .lwhy { font-size: 0.88rem; }
+  .band .lwhy strong { color: var(--accent-ink); }
+  .band.info .lwhy strong { color: var(--info-ink); }
+  .band.boundary .lwhy strong { color: var(--boundary-ink); }
+  @media (max-width: 720px) { .band { grid-template-columns: 1fr; gap: 0.5rem; } }
+
+  /* ============ Callout ============ */
+  .note {
+    border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 1rem 1.25rem; border-radius: 0 10px 10px 0; font-size: 0.95rem; max-width: none;
+  }
+</style>
+</head>
+<body>
+
+<main>
+  <header class="page">
+    <span class="kicker">Field guide · For Claude Code users</span>
+    <h1>You don't just use Claude Code.<br>You <span>harness</span> it.</h1>
+    <p class="lede">Out of the box, Claude Code is a very capable generalist that forgets everything between sessions and does whatever each prompt asks. A <strong>harness</strong> is the layer you build around it — rules, skills, sub-agents, hooks, and persistent memory — that turns "a chat that writes code" into a disciplined engineering system. This page maps one real, production harness so you can see what each piece does and why it exists.</p>
+    <div class="legend" role="list" aria-label="Color legend used across this page">
+      <span class="chip" role="listitem"><span class="dot accent"></span>Orchestration &amp; planning</span>
+      <span class="chip" role="listitem"><span class="dot info"></span>Execution &amp; knowledge</span>
+      <span class="chip" role="listitem"><span class="dot boundary"></span>Gates &amp; enforcement</span>
+      <span class="chip" role="listitem"><span class="dot pending"></span>Conditional — big changes only</span>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Sections">
+    <ol>
+      <li><a href="#why">01 Why</a></li>
+      <li><a href="#blocks">02 Building blocks</a></li>
+      <li><a href="#senses">03 Memory &amp; sight</a></li>
+      <li><a href="#roles">04 Roles</a></li>
+      <li><a href="#pipeline">05 Pipeline</a></li>
+      <li><a href="#triage">06 Triage</a></li>
+      <li><a href="#turn">07 One turn</a></li>
+      <li><a href="#gates">08 Gates</a></li>
+      <li><a href="#commands">09 Commands</a></li>
+      <li><a href="#yours">10 Build yours</a></li>
+    </ol>
+  </nav>
+
+  <!-- 01 -->
+  <section id="why">
+    <span class="eyebrow">01 · What problem does a harness solve?</span>
+    <h2>The model is smart. The process is what's missing.</h2>
+    <p>Every failure mode you've hit with an AI agent — code that looks right but isn't, scope that silently grows, context lost after a long session, "done" that doesn't actually solve the problem — is a <em>process</em> failure, not an intelligence failure. A harness doesn't make the model smarter; it makes the workflow around the model impossible to skip.</p>
+    <div class="scopegrid">
+      <div class="scopecard vanilla">
+        <h3>🔧 Vanilla Claude Code</h3>
+        <ul>
+          <li>One conversation does everything: plans, codes, reviews itself</li>
+          <li>Memory ends when the session ends</li>
+          <li>Quality depends on how good each prompt is</li>
+          <li>Nothing stops it from touching auth code or skipping tests</li>
+          <li>"Done" means "the model says it's done"</li>
+        </ul>
+      </div>
+      <div class="scopecard harnessed">
+        <h3>⚙️ Harnessed Claude Code</h3>
+        <ul>
+          <li>Roles are split: planners plan, executors build, evaluators judge</li>
+          <li>Decisions and lessons persist across sessions in a memory backend</li>
+          <li>Quality lives in reusable skills, not in each prompt</li>
+          <li>Hooks deterministically block risky writes and bypasses</li>
+          <li>"Done" means independent verification passed, with evidence</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note"><strong>The core idea:</strong> the human directs, the AI executes — but you can only direct what you can constrain. The harness is how you encode your engineering judgment <em>once</em>, so you don't have to re-prompt it every day.</p>
+  </section>
+
+  <!-- 02 -->
+  <section id="blocks">
+    <span class="eyebrow">02 · The building blocks</span>
+    <h2>Six layers, each answering one question</h2>
+    <p>Everything in this harness is one of six kinds of thing. Claude Code provides the mechanisms; the harness is what you build with them.</p>
+    <div class="stack">
+      <div class="band">
+        <div class="lname">Constitution<small>always loaded</small></div>
+        <div class="lwhy"><strong>"How do we work here?"</strong> A global <code>CLAUDE.md</code> with non-negotiable rules: ask what problem we're solving before coding, verify claims before agreeing, English in artifacts, no AI attribution in commits. Loaded into every session automatically.</div>
+        <div class="lfiles">~/.claude/CLAUDE.md<br>.sdd/project.json</div>
+      </div>
+      <div class="band">
+        <div class="lname">Skills<small>playbooks</small></div>
+        <div class="lwhy"><strong>"How do we do this specific task?"</strong> Reusable step-by-step protocols the agent loads on demand: one per pipeline phase (<code>sdd-triage</code>, <code>sdd-spec</code>, <code>sdd-verify</code>…) plus utilities. Write the procedure once; every future session follows it.</div>
+        <div class="lfiles">skills/sdd-*/SKILL.md<br>skills/_shared/*.md</div>
+      </div>
+      <div class="band info">
+        <div class="lname">Sub-agents<small>fresh minds</small></div>
+        <div class="lwhy"><strong>"Who does the work?"</strong> The main session is a thin <em>coordinator</em>; real work is delegated to sub-agents with clean context — including a "council" of personas (architect, QA, PM, security…) that review plans in parallel, each blind to the others' opinions.</div>
+        <div class="lfiles">.claude/agents/*.md</div>
+      </div>
+      <div class="band info">
+        <div class="lname">Memory<small>survives sessions</small></div>
+        <div class="lwhy"><strong>"What did we already learn?"</strong> A memory backend (engram, an MCP server) stores every decision, spec, and lesson under stable topic keys. New sessions — and post-compaction recoveries — read state back instead of starting from zero.</div>
+        <div class="lfiles">engram: sdd/{change}/*<br>project/lessons-learned</div>
+      </div>
+      <div class="band boundary">
+        <div class="lname">Hooks<small>deterministic</small></div>
+        <div class="lwhy"><strong>"What is the agent not allowed to do?"</strong> Scripts that fire on tool events, outside the model's control. GateGuard blocks first writes to sensitive paths and always denies <code>--no-verify</code>; pipeline-guard refuses to launch build phases whose prerequisites don't exist; batch-check lints touched files every turn.</div>
+        <div class="lfiles">~/.claude/hooks/<br>settings.json</div>
+      </div>
+      <div class="band boundary">
+        <div class="lname">Artifact store<small>paper trail</small></div>
+        <div class="lwhy"><strong>"Where does the plan live?"</strong> Specs, designs, slices, and verification reports are persisted artifacts — in memory topics, as files (<code>openspec/changes/…</code>), or synced to Jira, Confluence, or GitHub. The plan is a document you can audit, not a vibe in the chat.</div>
+        <div class="lfiles">openspec/changes/{change}/<br>.sdd/state/{change}.json</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section id="senses">
+    <span class="eyebrow">03 · Memory &amp; sight</span>
+    <h2>Two MCP servers the whole harness leans on</h2>
+    <p>An agent has two structural blindnesses: it <em>forgets</em> — everything dies with the context window — and it <em>can't see</em> a codebase cheaply — understanding structure through grep costs dozens of calls and a bloated context. The harness plugs in one MCP server for each, and almost every layer above depends on them.</p>
+    <div class="scopegrid">
+      <div class="scopecard">
+        <h3>🧠 engram — the diary</h3>
+        <ul>
+          <li><strong>Solves:</strong> amnesia between sessions and after context compaction</li>
+          <li>Stores decisions, specs, lessons, and pipeline state under stable topic keys (<code>sdd/{change}/spec</code>…)</li>
+          <li>Sub-agents are born empty: they receive topic <em>references</em> and read only what they need</li>
+          <li><code>/resume</code> works because state lives outside the conversation</li>
+          <li>If lost, it's <strong>unrecoverable</strong> — the "why" behind decisions isn't in the code</li>
+        </ul>
+      </div>
+      <div class="scopecard">
+        <h3>🕸️ codegraph — the map</h3>
+        <ul>
+          <li><strong>Solves:</strong> expensive, blind code exploration</li>
+          <li>Live-indexed graph of every symbol, call, and dependency in the workspace</li>
+          <li>"How does X work?" is <em>one</em> call returning the relevant source — not thirty greps</li>
+          <li>Callers and impact analysis follow real symbols, including dynamic dispatch that text search can't see</li>
+          <li>If lost, rebuild it from the repo in seconds — it's <strong>derived</strong>, never authored</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note"><strong>Rule of thumb:</strong> codegraph answers "how is the code connected <em>today</em>?" — engram answers "what did we decide, and <em>why</em>?". The planner explores with codegraph; every phase persists to engram. One is a map you can redraw; the other is a diary you can't rewrite.</p>
+  </section>
+
+  <!-- 04 -->
+  <section id="roles">
+    <span class="eyebrow">04 · The operating model</span>
+    <h2>Planner, Executor, Evaluator — never the same mind</h2>
+    <p>The harness splits every change into three roles. The <strong>Planner</strong> defines <em>what</em> to build. The <strong>Executor</strong> builds it. The <strong>Evaluator</strong> judges the result against the spec — and crucially, evaluators are launched <em>blind</em>: they see the artifacts, never the builder's reasoning, so they can't inherit its blind spots. Executor and Evaluator form a loop (build → verify → fix → verify) capped at 3 iterations before a human is pulled in.</p>
+    <div class="diagram" aria-label="Diagram: the three roles and their feedback loop">
+<pre class="mermaid">
+flowchart LR
+  subgraph P[🧠 Planner — defines WHAT]
+    plan[explore, propose, spec, design, slice]
+  end
+  subgraph X[🔨 Executor — builds HOW]
+    apply[apply code, slice by slice]
+  end
+  subgraph E[⚖️ Evaluator — judges blind]
+    verify[verify against spec with evidence]
+  end
+  plan --> apply --> verify
+  verify -- ❌ fail, max 3 loops --> apply
+  verify -- ✅ pass --> done[📦 archive + lessons learned]
+  verify -- 3 fails --> human[🙋 escalate to human]
+  classDef accent fill:#F5D78E,stroke:#8A5A10,color:#2A1F08
+  classDef info fill:#BBD5F0,stroke:#2B6CB0,color:#102A44
+  classDef boundary fill:#D9CFF0,stroke:#6B5CA5,color:#241C3A
+  class plan accent
+  class apply,done info
+  class verify,human boundary
+</pre>
+    </div>
+    <p class="dg-hint">Drag to pan · use − / + to zoom · ⛶ for fullscreen.</p>
+  </section>
+
+  <!-- 05 -->
+  <section id="pipeline">
+    <span class="eyebrow">05 · The pipeline</span>
+    <h2>SDD: spec-driven development, phase by phase</h2>
+    <p>Three commands drive everything: <code>/plan</code> runs the Planner until a signed, verified plan exists; <code>/build</code> runs the Executor–Evaluator loop; <code>/evaluate</code> runs the final judgment before archiving. Every phase writes its artifact to memory before the next one starts.</p>
+    <div class="diagram" aria-label="Diagram: the full SDD pipeline with its gates">
+<pre class="mermaid">
+flowchart TB
+  subgraph PLAN[⌨️ /plan]
+    direction LR
+    T[🏷️ triage, size it XS to XL] --> EX[🔍 explore the codebase]
+    EX --> PR[💡 propose the change]
+    PR --> SP[📋 spec with REQ-IDs]
+    SP --> DS[📐 design the solution]
+    DS --> SL[🍰 slice into vertical steps]
+    SL --> VP{🚪 plan verify, two blind judges}
+    VP -- gaps found --> SP
+  end
+  VP -- ready --> AP
+  subgraph BUILD[⌨️ /build]
+    direction LR
+    AP[🔨 apply a slice] --> VI{🧪 verify in-loop}
+    VI -- fail, max 3 --> AP
+    VI -- pass --> NX{more slices?}
+    NX -- yes --> AP
+  end
+  NX -- no --> SM
+  subgraph EVAL[⌨️ /evaluate]
+    direction LR
+    SM[🧹 simplify pass] --> VF{🏁 verify final}
+    VF --> ST{🧭 steward, did we solve the real problem?}
+    ST -- yes --> AR[📦 archive + extract lessons]
+  end
+  VF -- category fail --> DS
+  ST -- outcome gap --> PR
+  classDef accent fill:#F5D78E,stroke:#8A5A10,color:#2A1F08
+  classDef info fill:#BBD5F0,stroke:#2B6CB0,color:#102A44
+  classDef boundary fill:#D9CFF0,stroke:#6B5CA5,color:#241C3A
+  class T,EX,PR,SP,DS,SL accent
+  class AP,NX,SM,AR info
+  class VP,VI,VF,ST boundary
+</pre>
+    </div>
+    <p class="guarantee">Amber = planning · blue = execution · purple = gates that can send work backwards. The arrows going back up are the point: the pipeline is allowed to say "no — redo it".</p>
+    <h3>What each planning phase does — and why it exists</h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Phase</th><th scope="col">What it does</th><th scope="col">Why it exists</th></tr></thead>
+        <tbody>
+          <tr><td class="flowid">🏷️ triage</td><td>Sizes the change XS–XL, demands a written problem statement and explicit in/out scope, picks the route and the council</td><td>Cost should be proportional to risk — and without a written problem, there is nothing to judge the whole plan against later</td></tr>
+          <tr><td class="flowid">🔍 explore</td><td>Read-only investigation: current state of the code, affected areas, candidate approaches with tradeoffs, open questions</td><td>Decisions get made on evidence, not assumption. Product questions surface to the human <em>before</em> anything is proposed on top of them</td></tr>
+          <tr><td class="flowid">💡 propose</td><td>Turns the exploration into a contract: intent, scope, capabilities, risks, rollback plan, success criteria</td><td>This is the anchor against scope creep — every later artifact must trace back to it or the pipeline halts with drift</td></tr>
+          <tr><td class="flowid">📋 spec</td><td>Writes requirements as REQ-IDs with Given/When/Then scenarios; iterates with your feedback until <em>signed</em></td><td>A signed spec freezes the "what". Tests and verification can only ever be as good as these scenarios</td></tr>
+          <tr><td class="flowid">📐 design</td><td>Architecture, file-changes table, data model, ADRs, a test plan per REQ-ID, and a declared architecture impact</td><td>Makes the "how" auditable while it's still cheap to change. The design is the executor's map, not a suggestion</td></tr>
+          <tr><td class="flowid">🍰 slice</td><td>Decomposes into a walking skeleton plus SPIDR vertical slices, each with dependencies and REQ mapping</td><td>A big change becomes demoable increments — progress you can <em>observe</em> instead of progress the model claims</td></tr>
+          <tr><td class="flowid">🚪 plan verify</td><td>Two blind judges attack the plan's sufficiency before a single line of code exists</td><td>A gap found on paper costs minutes. The same gap found in code costs days — and usually a rewrite</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h3>The techniques inside /plan</h3>
+    <p>The phases aren't improvised — each one applies a named engineering technique:</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Technique</th><th scope="col">Where</th><th scope="col">What it buys you</th></tr></thead>
+        <tbody>
+          <tr><td class="flowid">🪜 Abstraction ladder</td><td>explore → design</td><td>Planning starts at the altitude the problem demands — user flow → system → architecture → code — and <em>descends</em>. Big changes never start at code; that's how you get clever solutions to the wrong problem</td></tr>
+          <tr><td class="flowid">🧾 Given/When/Then + stable REQ-IDs</td><td>spec</td><td>Every requirement is a testable scenario with an ID that never changes, so slices, tests, and verification all trace back to the same contract</td></tr>
+          <tr><td class="flowid">📜 ADRs</td><td>design</td><td>Each substantive decision is recorded with its <em>why</em> and alternatives; the best get promoted to project level on archive, so future changes inherit the reasoning</td></tr>
+          <tr><td class="flowid">🍰 SPIDR vertical slicing</td><td>slice</td><td>Slices cut through <em>all</em> layers (UI to data) and each delivers something demoable — never "backend first, frontend someday"</td></tr>
+          <tr><td class="flowid">🚶 Walking skeleton</td><td>slice → apply</td><td>Slice S-000 is the thinnest end-to-end path, built <em>first</em>: it proves the architecture actually connects before any feature hangs off it</td></tr>
+          <tr><td class="flowid">🧪 Test derivation + strict TDD</td><td>design → apply</td><td>The design maps every REQ-ID to the tests that will prove it; in strict TDD mode the executor must write those tests before the code</td></tr>
+          <tr><td class="flowid">🙈 Anti-anchoring</td><td>every review</td><td>Judges and council personas receive only the artifacts under review — never the author's reasoning. An evaluator that reads your logic inherits your blind spots</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section id="triage">
+    <span class="eyebrow">06 · Triage</span>
+    <h2>Not every change deserves the full ceremony</h2>
+    <p>The first phase sizes the change and routes it. A typo fix should never pay the cost of a council review — and a payments change should never escape it. One override beats size: anything touching a <strong>sensitive area</strong> (auth, payments, privacy, data migration) is forced onto the heavyweight path no matter how small it looks.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Class</th><th scope="col">Example</th><th scope="col">Path</th><th scope="col">Council personas</th></tr></thead>
+        <tbody>
+          <tr><td class="flowid">XS</td><td>Typo, config tweak</td><td>Inline — the coordinator just does it</td><td>None</td></tr>
+          <tr><td class="flowid">S</td><td>Small isolated fix</td><td>Inline, with a quick verify</td><td>None</td></tr>
+          <tr><td class="flowid">M</td><td>New endpoint, refactor</td><td>Full pipeline, light council</td><td>Situational (QA, architect…)</td></tr>
+          <tr><td class="flowid">L</td><td>Feature across layers</td><td>Full pipeline + every gate</td><td>Full: architect, BA, PM, QA + conditionals</td></tr>
+          <tr><td class="flowid">XL</td><td>Epic-sized initiative</td><td>Becomes a <em>program</em>: decomposed into L/M sub-changes with explicit contracts between them, integration-verified after each one</td><td>Full, per sub-change</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>🏛️ The council — many lenses, one plan</h3>
+    <p>For M and L changes, the planning phases don't rely on a single reviewer. The coordinator convenes a <strong>council</strong>: persona sub-agents, each examining the same artifact through one professional lens. They run in <em>parallel</em> and <em>blind</em> — no persona sees another's opinion, only the artifact under review — and the coordinator synthesizes their perspectives afterwards. It is not design-by-committee: personas <em>advise</em>, the pipeline <em>decides</em>.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Persona</th><th scope="col">Their lens</th><th scope="col">When they join</th></tr></thead>
+        <tbody>
+          <tr><td class="flowid">🏗️ Architect</td><td>Layering, dependency direction, abstraction boundaries, ADRs</td><td>Always on L; situational on M</td></tr>
+          <tr><td class="flowid">📊 Business analyst</td><td>User value, acceptance criteria, scope clarity, scenarios from the user's side</td><td>Always on L — explore, propose, spec</td></tr>
+          <tr><td class="flowid">📈 Product manager</td><td>Prioritization, value vs. cost, followups tracked as debt instead of vanishing</td><td>Always on L</td></tr>
+          <tr><td class="flowid">🧪 QA engineer</td><td>Adversarial test thinking: edge cases, failure modes, mutation-resistant assertions</td><td>Always on L — spec, design, verify</td></tr>
+          <tr><td class="flowid">🔐 Security engineer</td><td>Attack surface, validation, threat modeling, secrets handling</td><td>Whenever the change touches a sensitive area</td></tr>
+          <tr><td class="flowid">🗄️ DBA</td><td>Schema design, indexes, migration safety, backfills</td><td>When the data layer is materially affected</td></tr>
+          <tr><td class="flowid">🎨 UX designer</td><td>User flows, accessibility, mental models, error states</td><td>When the change has a user-facing surface</td></tr>
+          <tr><td class="flowid">✍️ Tech writer</td><td>Naming, contract documentation, error-message language</td><td>When public APIs or external contracts change</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="guarantee">Why it works: a single reviewer optimizes for one thing and goes blind to the rest. Parallel, independent lenses surface the tradeoffs <em>before</em> they're welded into code — and XS/S changes skip the council entirely, because that's triage doing its job: ceremony proportional to risk.</p>
+  </section>
+
+  <!-- 07 -->
+  <section id="turn">
+    <span class="eyebrow">07 · Anatomy of one turn</span>
+    <h2>What actually happens when you type /plan</h2>
+    <p>The coordinator never does the heavy lifting itself — it resolves context, launches a sub-agent with exactly the context it needs, then persists the result. That's the whole trick: a thin conversation thread that survives, and disposable workers that don't need to.</p>
+    <div class="diagram" aria-label="Diagram: sequence of one /plan turn">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant U as 👤 You
+  participant O as 🎛️ Coordinator, the main session
+  participant H as 🚧 Hooks
+  participant A as 🤖 Sub-agent, fresh context
+  participant M as 🧠 Memory backend
+  U->>O: /plan add-csv-export
+  O->>M: read project context + past lessons
+  M-->>O: stack, sensitive areas, conventions
+  O->>H: launch triage sub-agent
+  H-->>O: allowed, prerequisites exist
+  O->>A: task + injected rules + artifact references
+  A->>M: read predecessor artifacts
+  A-->>O: envelope: status, summary, risks
+  O->>M: persist artifact + pipeline state
+  O-->>U: triage says M, next is explore
+</pre>
+    </div>
+    <p class="guarantee">Step 9 is why a crash, a context compaction, or tomorrow's fresh session can pick up exactly where this one stopped: state lives outside the conversation.</p>
+  </section>
+
+  <!-- 08 -->
+  <section id="gates">
+    <span class="eyebrow">08 · The gates</span>
+    <h2>Trust the model, verify the work</h2>
+    <p>Gates are checkpoints that can halt or reroute the pipeline. Each asks a different question — and the reviewers are always independent agents that never saw the author's reasoning.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Gate</th><th scope="col">When</th><th scope="col">The question it asks</th><th scope="col">If it fails</th></tr></thead>
+        <tbody>
+          <tr><td class="flowid">🚪 Plan verify</td><td>After slicing, before building</td><td>Is this plan sufficient? Two blind judges: one checks problem fit, one simulates being the executor</td><td>Routes back to the exact phase that has the gap</td></tr>
+          <tr><td class="flowid">🧪 Verify in-loop</td><td>After each slice batch</td><td>Does the code match the spec, with real test evidence?</td><td>Fix attempt; 3 strikes → human</td></tr>
+          <tr><td class="flowid">🧹 Simplify</td><td>Start of /evaluate</td><td>Is there duplication, dead weight, or over-engineering in the full diff?</td><td>Applies safe cleanups; non-blocking</td></tr>
+          <tr><td class="flowid">🏁 Verify final</td><td>Before archive</td><td>Does the whole change satisfy every requirement end to end?</td><td>Re-spec or re-design, by failure category</td></tr>
+          <tr><td class="flowid">🧭 Steward</td><td>Post-design and pre-archive</td><td>Are we solving the <em>original problem</em> — or just shipping code that passes tests?</td><td>Halts with an outcome gap; escalates "is it usable?" to the human</td></tr>
+          <tr><td class="flowid">🏛️ Architecture audit</td><td>Before archive (M/L)</td><td>Did the change violate the architecture baseline?</td><td>Blocks archive until reconciled — or overridden with a persisted reason</td></tr>
+          <tr><td class="flowid">⚔️ Adversarial review</td><td>Large or sensitive changes</td><td>Two independent judges attack the diff — blind, spec-only</td><td>Fix iterations; unresolved findings need a human decision</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Four of these deserve a closer look, because they carry the philosophy of the whole system.</p>
+
+    <h3>📡 The sensors — verify in-loop</h3>
+    <p>During <code>/build</code>, every slice batch passes through a fast, delta-focused verification: run the real tests, hold the slice against its acceptance criteria and REQ-IDs, report with evidence. Think of them as sensors on a production line, not a final inspection at the exit. A failure gives the executor a fix attempt; three failures escalate to a human — the loop is never allowed to spin forever. The payoff: drift gets caught while it is <em>one slice old</em> and cheap to fix, instead of being discovered at the end, fossilized under ten more slices built on top of it.</p>
+
+    <h3>🙈 The blind judges</h3>
+    <p>A blind judge is an independent sub-agent that receives <em>only</em> the artifacts under review — the spec, the diff, the acceptance criteria — never the author's reasoning, never the coordinator's conversation, never the other judge's opinion. In plan-verify, one judge checks problem fit ("does this plan solve the stated problem?") while the other simulates being the executor ("could I build this with zero questions?"). In adversarial review, two judges attack the final diff armed with the spec alone. The blindness is the point: an evaluator that reads your logic inherits your blind spots and ends up agreeing with you. Two independent judges with <em>different lenses</em> catch failures that two copies of the same reviewer never would.</p>
+
+    <h3>🧭 The voice of conscience — the steward</h3>
+    <p>The steward is born during <code>/plan</code>: right after design, it writes the <strong>north-star memo</strong> — the <em>outcome</em> this change is chasing, as opposed to the outputs it will produce ("users stop losing drafts", not "an autosave endpoint exists"). At the very end, before archive, it returns for the <strong>reckoning</strong>: did we deliver on the <em>original</em> problem? Is it usable? Is it significant — or is it just code that passes tests? It answers what it can analyze, and for the questions only a human can judge, it escalates instead of faking a verdict. Why it exists: verification proves the code matches the spec — the conscience proves the spec still matched the problem. On long changes, those two drift apart in silence.</p>
+
+    <h3>🧹 Why simplify runs before the final verdict</h3>
+    <p>Order is everything here, for two reasons. First, the final verification must judge <em>the code that will actually ship</em> — cleaning up after the verdict would invalidate the verdict. Second, simplify is allowed to be aggressive precisely <em>because</em> the final verify runs after it as a safety net: if a cleanup accidentally changes behavior, the gate catches it. And the two never mix concerns — simplify hunts quality (duplication, dead weight, over-engineering, code at the wrong altitude across the <em>full</em> diff, not slice by slice), while verify hunts correctness. A reviewer asked to do both does both badly.</p>
+
+    <p class="note"><strong>Why so many?</strong> Each gate exists because a specific failure once slipped through without it. Verification tells you the code matches the spec; the steward tells you the spec matched the problem. Different failures, different gates.</p>
+  </section>
+
+  <!-- 09 -->
+  <section id="commands">
+    <span class="eyebrow">09 · Daily driver</span>
+    <h2>What you actually type</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Command</th><th scope="col">What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="flowid"><code>/triage &lt;topic&gt;</code></td><td>Preview how a change would be classified and routed, without committing to anything</td></tr>
+          <tr><td class="flowid"><code>/plan &lt;topic&gt;</code></td><td>Run the whole Planner: triage → explore → propose → spec → design → slice → plan-verify. Ends with a signed, judged plan</td></tr>
+          <tr><td class="flowid"><code>/build</code></td><td>Run the Executor–Evaluator loop over the slices until everything verifies</td></tr>
+          <tr><td class="flowid"><code>/evaluate</code></td><td>Simplify pass → final verification → steward reckoning → archive with lessons learned</td></tr>
+          <tr><td class="flowid"><code>/resume</code></td><td>Read persisted state and continue from the last incomplete phase — after a restart, a crash, or a context compaction</td></tr>
+          <tr><td class="flowid"><code>/replan --from=&lt;phase&gt;</code></td><td>Recovery valve: re-run from a given phase when reality surprised the design</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section id="yours">
+    <span class="eyebrow">10 · Build your own</span>
+    <h2>You don't need all of this on day one</h2>
+    <p>This harness grew gate by gate, each piece added after a real failure. If you're starting yours, grow it in the same order the pain arrives:</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th scope="col">Start with</th><th scope="col">Pain it removes</th><th scope="col">Claude Code mechanism</th></tr></thead>
+        <tbody>
+          <tr><td class="flowid">1 · A constitution</td><td>Re-explaining your standards in every session</td><td><code>CLAUDE.md</code></td></tr>
+          <tr><td class="flowid">2 · Persistent memory</td><td>Decisions and lessons evaporating between sessions</td><td>MCP memory server, or the built-in memory directory</td></tr>
+          <tr><td class="flowid">3 · Skills</td><td>Good workflows living only in your head</td><td><code>skills/*/SKILL.md</code></td></tr>
+          <tr><td class="flowid">4 · Separate reviewers</td><td>The author grading its own homework</td><td>Sub-agents, launched blind</td></tr>
+          <tr><td class="flowid">5 · Hooks</td><td>Rules the model can forget under pressure</td><td>PreToolUse / Stop hooks in <code>settings.json</code></td></tr>
+          <tr><td class="flowid">6 · A pipeline</td><td>Big changes with no auditable plan</td><td>Orchestration rules + persisted phase artifacts</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><strong>The takeaway:</strong> a harness is your engineering culture, written down where the agent can't ignore it. The model brings the intelligence; you bring the judgment — and the harness is how your judgment keeps working while you sleep.</p>
+  </section>
+</main>
+
+<script>
+  document.querySelectorAll('.diagram').forEach(function (box) {
+    var zoom = 1;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'zoomwrap';
+    while (box.firstChild) wrap.appendChild(box.firstChild);
+
+    var bar = document.createElement('div');
+    bar.className = 'zoombar';
+    var readout = document.createElement('span');
+
+    function apply() {
+      wrap.style.transform = 'scale(' + zoom + ')';
+      readout.textContent = Math.round(zoom * 100) + '%';
+    }
+    function makeButton(label, title, fn) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      b.title = title;
+      b.setAttribute('aria-label', title);
+      b.addEventListener('click', fn);
+      bar.appendChild(b);
+    }
+    makeButton('−', 'Zoom out', function () { zoom = Math.max(0.4, +(zoom - 0.2).toFixed(2)); apply(); });
+    makeButton('+', 'Zoom in', function () { zoom = Math.min(3, +(zoom + 0.2).toFixed(2)); apply(); });
+    makeButton('⟲', 'Reset zoom', function () { zoom = 1; apply(); });
+    var fsBtn = document.createElement('button');
+    fsBtn.type = 'button';
+    fsBtn.textContent = '⛶';
+    fsBtn.title = 'Toggle fullscreen';
+    fsBtn.setAttribute('aria-label', 'Toggle fullscreen');
+    var isFull = false;
+    function setFull(on) {
+      isFull = on;
+      box.classList.toggle('fauxfull', on);
+      document.body.classList.toggle('noscroll', on);
+      fsBtn.textContent = on ? '✕' : '⛶';
+      fsBtn.title = on ? 'Exit fullscreen (Esc)' : 'Toggle fullscreen';
+    }
+    fsBtn.addEventListener('click', function () { setFull(!isFull); });
+    window.addEventListener('keydown', function (e) {
+      if (isFull && e.key === 'Escape') setFull(false);
+    });
+    bar.appendChild(fsBtn);
+    bar.appendChild(readout);
+
+    box.appendChild(bar);
+    box.appendChild(wrap);
+    box.insertBefore(bar, wrap);
+    apply();
+
+    var drag = null;
+    box.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('.zoombar')) return;
+      drag = { x: e.clientX, y: e.clientY, l: box.scrollLeft, t: box.scrollTop };
+      box.classList.add('dragging');
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      box.scrollLeft = drag.l - (e.clientX - drag.x);
+      box.scrollTop = drag.t - (e.clientY - drag.y);
+    });
+    window.addEventListener('pointerup', function () {
+      drag = null;
+      box.classList.remove('dragging');
+    });
+  });
+</script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+</script>
+</body>
+</html>
