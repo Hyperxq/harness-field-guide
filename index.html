@@ -434,6 +434,55 @@ flowchart TB
 </pre>
     </div>
     <p class="guarantee">Amber = planning · blue = execution · purple = gates that can send work backwards. The arrows going back up are the point: the pipeline is allowed to say "no — redo it".</p>
+
+    <h3>The full map — straight from the harness</h3>
+    <p>This is the complete phase chain as the harness itself defines it, including the pieces the simplified view leaves out: the <strong>spec ⇄ design</strong> refinement loop, the optional <strong>publish</strong> step (creating Jira/Confluence artifacts when the idea was born here), the <strong>architecture baseline</strong> injected read-only into the planning phases (dotted lines), and both <strong>steward</strong> checkpoints wrapping the work.</p>
+    <div class="diagram" aria-label="Diagram: the complete SDD phase chain with lifecycle hooks">
+<pre class="mermaid">
+flowchart TB
+  ARCH[🏛️ architecture baseline]
+  subgraph PLAN[⌨️ /plan — the Planner]
+    direction LR
+    T[🏷️ triage] --> E[🔍 explore]
+    E --> P[💡 propose]
+    P --> S[📋 spec]
+    S <--> D[📐 design]
+    D --> F1{🧭 steward foresight}
+    F1 --> SL[🍰 slice]
+    SL --> VP{🚪 verify plan}
+    VP -- gaps, max 3 --> S
+    VP -- ready --> PB[📤 publish upstream, idea-first only]
+  end
+  PB --> A
+  subgraph BUILD[⌨️ /build — the Executor loop]
+    direction LR
+    A[🔨 apply] --> VI{🧪 verify in-loop}
+    VI -- fail, max 3 --> A
+  end
+  VI -- pass --> SM
+  subgraph EVAL[⌨️ /evaluate — the Evaluator]
+    direction LR
+    SM[🧹 simplify] --> VF{🏁 verify final}
+    VF --> AU{🏛️ architecture audit}
+    AU --> R{🧭 steward reckoning}
+    R --> AR[📦 archive + lessons]
+  end
+  ARCH -. read-only inject .-> E
+  ARCH -. read-only inject .-> P
+  ARCH -. read-only inject .-> D
+  VF -. impact additive or breaking .-> RF[🏛️ refresh baseline]
+  classDef accent fill:#F5D78E,stroke:#8A5A10,color:#2A1F08
+  classDef info fill:#BBD5F0,stroke:#2B6CB0,color:#102A44
+  classDef boundary fill:#D9CFF0,stroke:#6B5CA5,color:#241C3A
+  classDef pending fill:#E8E6E0,stroke:#888,stroke-dasharray:5 4,color:#333
+  class T,E,P,S,D,SL accent
+  class A,SM,AR info
+  class F1,VP,VI,VF,AU,R,ARCH,RF boundary
+  class PB pending
+</pre>
+    </div>
+    <p class="guarantee">Dotted lines = the architecture baseline being injected read-only into explore, propose, and design — those phases <em>consult</em> the project's architecture, they never mutate it. The dashed node (publish) is conditional: it only runs when the idea was born in the harness and needs tickets created upstream. Both iteration loops (plan verify → spec, verify in-loop → apply) are capped at 3 before a human is pulled in.</p>
+
     <h3>What each planning phase does — and why it exists</h3>
     <div class="tablewrap">
       <table>
