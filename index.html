@@ -6,6 +6,9 @@
 <meta name="description" content="Field guide to a production Claude Code harness: building blocks, memory and sight, the SDD pipeline, gates, and how to grow your own.">
 <title>The Claude Code Harness — Field Guide</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧭</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&display=swap">
 <style>
   /* ============ Design tokens ============
      Semantic triad carried through page + diagrams:
@@ -68,15 +71,16 @@
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   body {
     background: var(--ground); color: var(--ink);
-    font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    font-family: "Nunito Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
     font-size: 1rem; line-height: 1.6; margin: 0; padding: 0 1.25rem 6rem;
   }
   main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 4.5rem; }
 
   h1, h2, h3 {
-    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, serif;
-    text-wrap: balance; line-height: 1.15; margin: 0; font-weight: 700;
+    font-family: "Plus Jakarta Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    text-wrap: balance; line-height: 1.2; margin: 0; font-weight: 700;
   }
+  h1 { font-weight: 800; }
   h1 { font-size: clamp(2rem, 5vw, 2.9rem); letter-spacing: -0.01em; }
   h2 { font-size: clamp(1.35rem, 3vw, 1.7rem); }
   p { margin: 0; max-width: 68ch; }
@@ -150,7 +154,7 @@
     background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
     padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: 0.6rem;
   }
-  .scopecard h3 { font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; font-size: 1rem; font-weight: 700; }
+  .scopecard h3 { font-size: 1rem; font-weight: 700; }
   .scopecard ul { margin: 0; padding-left: 1.15rem; font-size: 0.93rem; display: flex; flex-direction: column; gap: 0.45rem; }
   .scopecard.vanilla { border-style: dashed; }
   .scopecard.vanilla h3 { color: var(--muted); }
@@ -700,7 +704,10 @@ sequenceDiagram
     mermaid.initialize({
       startOnLoad: false,
       theme: dark ? 'dark' : 'neutral',
-      fontFamily: '"Avenir Next", "Segoe UI", system-ui, sans-serif',
+      fontFamily: '"Nunito Sans", "Avenir Next", "Segoe UI", system-ui, sans-serif',
+      fontSize: 16,
+      flowchart: { useMaxWidth: false, nodeSpacing: 45, rankSpacing: 55 },
+      sequence: { useMaxWidth: false, actorFontSize: 16, messageFontSize: 15, width: 200 },
       themeVariables: dark
         ? { darkMode: true, background: '#1C222B', primaryColor: '#2B333F',
             primaryTextColor: '#EAE8E1', primaryBorderColor: '#40495A',
