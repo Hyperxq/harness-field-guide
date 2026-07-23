@@ -227,6 +227,8 @@
     border-left: 4px solid var(--accent); background: var(--accent-soft);
     padding: 1rem 1.25rem; border-radius: 0 10px 10px 0; font-size: 0.95rem; max-width: none;
   }
+  .pyramid-card { background: #FFFFFF; border: 1px solid var(--line); border-radius: 10px; padding: 1.2rem; margin: 1.6rem auto; max-width: 680px; }
+  .pyramid-card img { display: block; width: 100%; height: auto; }
 </style>
 </head>
 <body>
@@ -294,7 +296,7 @@
   <section id="craft">
     <span class="eyebrow">02 · The craftsmanship underneath</span>
     <h2>The harness invents nothing — it enforces what masters already knew</h2>
-    <p>Every mechanism in this system is a classic software-craftsmanship practice, automated and made impossible to skip. This is the real curriculum: if you understand these ten ideas, you understand the harness — and you're a better engineer even with the AI switched off.</p>
+    <p>Every mechanism in this system is a classic software-craftsmanship practice, automated and made impossible to skip. This is the real curriculum: if you understand these twelve ideas, you understand the harness — and you're a better engineer even with the AI switched off.</p>
     <div class="tablewrap">
       <table>
         <thead><tr><th scope="col">Practice</th><th scope="col">The idea</th><th scope="col">Where the harness enforces it</th></tr></thead>
@@ -302,15 +304,23 @@
           <tr><td class="flowid">🎯 Problem-first thinking</td><td>Never touch code until you can say who is hurting, what pain, and why now</td><td>Triage refuses to start without a problem statement and explicit scope</td></tr>
           <tr><td class="flowid">🧾 Specification before code</td><td>Requirements as testable Given/When/Then scenarios with IDs that never change</td><td>The spec phase; every slice, test, and verdict traces back to a REQ-ID</td></tr>
           <tr><td class="flowid">🪜 Right altitude</td><td>Think user flow → system → architecture → code, descending — never start at code</td><td>Explore and design enter the abstraction ladder at the height triage demands</td></tr>
+          <tr><td class="flowid">✂️ Simplicity by default</td><td>KISS + YAGNI: less code solving the same problem is better code — build only what today's stated requirements need, never for a future nobody specified</td><td>A craftsman preamble injected into every sub-agent; design traces every new file and interface to a REQ-ID; a simplify pass cleans every change before the final verdict</td></tr>
+          <tr><td class="flowid">🧩 Deliberate patterns</td><td>Match the project's existing pattern first; reach for a named design or architectural pattern only when the problem's shape matches it and it pays for its indirection</td><td>Design's pattern check — a pattern with no precedent demands an ADR. An <code>if</code> beats a Strategy until the third variant arrives</td></tr>
           <tr><td class="flowid">🚶 Walking skeleton</td><td>Build the thinnest end-to-end path first, to prove the architecture connects</td><td>Slice S-000, always built before any feature</td></tr>
           <tr><td class="flowid">🍰 Vertical slicing</td><td>Every increment cuts through all layers and is demoable — no "backend first, UI someday"</td><td>SPIDR slicing in the slice phase</td></tr>
           <tr><td class="flowid">🧪 Test-driven development</td><td>Tests derive from the spec and come before the code</td><td>Design maps each REQ-ID to its tests; strict TDD mode in apply</td></tr>
           <tr><td class="flowid">📜 Decisions on the record</td><td>Significant choices written down with their <em>why</em> and the alternatives (ADRs)</td><td>The design phase; the best ADRs get promoted to project level on archive</td></tr>
           <tr><td class="flowid">🙈 Independent review</td><td>The author never grades their own homework — and reviewers stay blind to the author's reasoning</td><td>The council, plan verify, adversarial review — every evaluator in the system</td></tr>
-          <tr><td class="flowid">⚖️ Ceremony proportional to risk</td><td>A typo fix and a payments change do not deserve the same process</td><td>Triage's XS→XL routing, plus the sensitive-area override</td></tr>
+          <tr><td class="flowid">⚖️ Ceremony proportional to risk</td><td>A typo fix and a payments change do not deserve the same process — and ceremony spent is never refunded</td><td>Triage's XS→XL routing: doubt resolves to the lighter class, escalation needs evidence, and a change mirroring an existing precedent drops a level</td></tr>
           <tr><td class="flowid">📚 Continuous learning</td><td>Every finished change should teach the next one</td><td>Archive extracts lessons-learned into permanent memory</td></tr>
         </tbody>
       </table>
+    </div>
+    <h3>🔺 One pyramid, in motion</h3>
+    <p>All of these practices sit inside a maxim older than any of them — Kent Beck's <em>make it work, make it right, make it fast</em>. The pipeline is this pyramid in motion: the walking skeleton and the happy path make it <em>work</em>; the principles, the simplify pass, and every verification gate make it <em>right</em>; and efficiency stays at the very top — one lens of the final cleanup, never a reason to complicate a design early.</p>
+    <div class="pyramid-card">
+      <img src="assets/craft-pyramid.webp" loading="lazy" width="982" height="653"
+           alt="The craftsmanship pyramid: 'make it work' at the base; YAGNI, principle of least surprise, KISS, be consistent, DRY, clean code, SOLID, design patterns and agile stacked above it, bracketed together as 'make it right'; then the boy scout rule; and 'make it fast' alone at the top.">
     </div>
     <p class="note"><strong>This is why "AI is a tool" isn't a slogan here.</strong> The human's judgment lives inside these practices — the harness just makes them non-negotiable. Learn them and any agent becomes more powerful in your hands; skip them and no amount of tooling saves you.</p>
   </section>
@@ -522,7 +532,7 @@ flowchart TB
           <tr><td class="flowid">🔍 explore</td><td>Read-only investigation: current state of the code, affected areas, candidate approaches with tradeoffs, open questions</td><td>Decisions get made on evidence, not assumption. Product questions surface to the human <em>before</em> anything is proposed on top of them</td></tr>
           <tr><td class="flowid">💡 propose</td><td>Turns the exploration into a contract: intent, scope, capabilities, risks, rollback plan, success criteria</td><td>This is the anchor against scope creep — every later artifact must trace back to it or the pipeline halts with drift</td></tr>
           <tr><td class="flowid">📋 spec</td><td>Writes requirements as REQ-IDs with Given/When/Then scenarios; iterates with your feedback until <em>signed</em></td><td>A signed spec freezes the "what". Tests and verification can only ever be as good as these scenarios</td></tr>
-          <tr><td class="flowid">📐 design</td><td>Architecture, file-changes table, data model, ADRs, a test plan per REQ-ID, and a declared architecture impact</td><td>Makes the "how" auditable while it's still cheap to change. The design is the executor's map, not a suggestion</td></tr>
+          <tr><td class="flowid">📐 design</td><td>Architecture, a pattern check (existing precedent → named pattern → simplest structure), file-changes table, data model, ADRs, a test plan per REQ-ID, a declared architecture impact — closed by a principles check: every new piece traces to a REQ-ID, concerns stay separated, dependencies point the way the baseline says</td><td>Makes the "how" auditable while it's still cheap to change. The design is the executor's map, not a suggestion</td></tr>
           <tr><td class="flowid">🍰 slice</td><td>Decomposes into a walking skeleton plus SPIDR vertical slices, each with dependencies and REQ mapping</td><td>A big change becomes demoable increments — progress you can <em>observe</em> instead of progress the model claims</td></tr>
           <tr><td class="flowid">🚪 plan verify</td><td>Two blind judges attack the plan's sufficiency before a single line of code exists</td><td>A gap found on paper costs minutes. The same gap found in code costs days — and usually a rewrite</td></tr>
         </tbody>
@@ -534,14 +544,14 @@ flowchart TB
   <section id="triage">
     <span class="eyebrow">07 · Triage</span>
     <h2>Not every change deserves the full ceremony</h2>
-    <p>The first phase sizes the change and routes it. A typo fix should never pay the cost of a council review — and a payments change should never escape it. One override beats size: anything touching a <strong>sensitive area</strong> (auth, payments, privacy, data migration) is forced onto the heavyweight path no matter how small it looks.</p>
+    <p>The first phase sizes the change and routes it. A typo fix should never pay the cost of a council review — and a payments change should never escape it. Two modifiers bend size, in opposite directions. A change that <strong>alters security-relevant behaviour</strong> (auth decisions, payment logic, personal-data exposure, production migrations) is forced up to at least M with a security review — and it's a <em>subject</em> test: merely passing near sensitive code without changing what it decides triggers nothing, because in a critical domain everything lives near sensitive code. And a change that <strong>mirrors an established precedent</strong> — a fourth endpoint shaped like the other three — drops one level: mechanical work is judged as mechanical, whatever its line count. Doubt resolves to the lighter class and escalation needs evidence, because under-classification self-corrects mid-flight while ceremony spent is never refunded.</p>
     <div class="tablewrap">
       <table>
         <thead><tr><th scope="col">Class</th><th scope="col">Example</th><th scope="col">Path</th><th scope="col">Council personas</th></tr></thead>
         <tbody>
           <tr><td class="flowid">XS</td><td>Typo, config tweak</td><td>Inline — the coordinator just does it</td><td>None</td></tr>
           <tr><td class="flowid">S</td><td>Small isolated fix</td><td>Inline, with a quick verify</td><td>None</td></tr>
-          <tr><td class="flowid">M</td><td>New endpoint, refactor</td><td>Full pipeline, light council</td><td>Situational (QA, architect…)</td></tr>
+          <tr><td class="flowid">M</td><td>New endpoint, refactor</td><td>Light pipeline — propose and spec merge into one artifact, one signature</td><td>None by default; security engineer if the sensitivity override fired</td></tr>
           <tr><td class="flowid">L</td><td>Feature across layers</td><td>Full pipeline + every gate</td><td>Full: architect, BA, PM, QA + conditionals</td></tr>
           <tr><td class="flowid">XL</td><td>Epic-sized initiative</td><td>Becomes a <em>program</em>: decomposed into L/M sub-changes with explicit contracts between them, integration-verified after each one</td><td>Full, per sub-change</td></tr>
         </tbody>
@@ -549,16 +559,16 @@ flowchart TB
     </div>
 
     <h3>🏛️ The council — many lenses, one plan</h3>
-    <p>For M and L changes, the planning phases don't rely on a single reviewer. The coordinator convenes a <strong>council</strong>: persona sub-agents, each examining the same artifact through one professional lens. They run in <em>parallel</em> and <em>blind</em> — no persona sees another's opinion, only the artifact under review — and the coordinator synthesizes their perspectives afterwards. It is not design-by-committee: personas <em>advise</em>, the pipeline <em>decides</em>.</p>
+    <p>For L changes, the planning phases don't rely on a single reviewer. The coordinator convenes a <strong>council</strong>: persona sub-agents, each examining the same artifact through one professional lens. They run in <em>parallel</em> and <em>blind</em> — no persona sees another's opinion, only the artifact under review — and the coordinator synthesizes their perspectives afterwards. It is not design-by-committee: personas <em>advise</em>, the pipeline <em>decides</em>.</p>
     <div class="tablewrap">
       <table>
         <thead><tr><th scope="col">Persona</th><th scope="col">Their lens</th><th scope="col">When they join</th></tr></thead>
         <tbody>
-          <tr><td class="flowid">🏗️ Architect</td><td>Layering, dependency direction, abstraction boundaries, ADRs</td><td>Always on L; situational on M</td></tr>
+          <tr><td class="flowid">🏗️ Architect</td><td>Layering, dependency direction, abstraction boundaries, ADRs</td><td>Always on L</td></tr>
           <tr><td class="flowid">📊 Business analyst</td><td>User value, acceptance criteria, scope clarity, scenarios from the user's side</td><td>Always on L — explore, propose, spec</td></tr>
           <tr><td class="flowid">📈 Product manager</td><td>Prioritization, value vs. cost, followups tracked as debt instead of vanishing</td><td>Always on L</td></tr>
           <tr><td class="flowid">🧪 QA engineer</td><td>Adversarial test thinking: edge cases, failure modes, mutation-resistant assertions</td><td>Always on L — spec, design, verify</td></tr>
-          <tr><td class="flowid">🔐 Security engineer</td><td>Attack surface, validation, threat modeling, secrets handling</td><td>Whenever the change touches a sensitive area</td></tr>
+          <tr><td class="flowid">🔐 Security engineer</td><td>Attack surface, validation, threat modeling, secrets handling</td><td>Whenever the change alters a sensitive area's behaviour — on M and L alike</td></tr>
           <tr><td class="flowid">🗄️ DBA</td><td>Schema design, indexes, migration safety, backfills</td><td>When the data layer is materially affected</td></tr>
           <tr><td class="flowid">🎨 UX designer</td><td>User flows, accessibility, mental models, error states</td><td>When the change has a user-facing surface</td></tr>
           <tr><td class="flowid">✍️ Tech writer</td><td>Naming, contract documentation, error-message language</td><td>When public APIs or external contracts change</td></tr>
@@ -652,7 +662,7 @@ flowchart TB
     <p>The sensors. After every slice batch: run the real tests, hold the slice against its acceptance criteria and REQ-IDs, report with evidence. Fast and delta-focused — a sensor on the production line, not an inspection at the exit. A failure gives the executor one fix attempt; three failures escalate to a human, so the loop can never spin forever. The payoff: drift gets caught while it is <em>one slice old</em> and cheap to fix, instead of being discovered at the end, fossilized under ten more slices built on top of it.</p>
 
     <h3>3 · 🏁 Verify the whole — before archive</h3>
-    <p>Three movements, in strict order. First, a <strong>simplify pass</strong> cleans the full diff — duplication, dead weight, over-engineering. It runs <em>before</em> the verdict so the verdict judges the code that will actually ship, and it can afford to be aggressive precisely because final verification comes right after it as a safety net. Then <strong>verify final</strong> checks every requirement end-to-end — and when the change is large or touches a sensitive area, it summons <strong>two adversarial judges with different responsibilities</strong>, blind, armed with the spec and the diff alone, each attacking from their own lens. Finally the circle closes: the <strong>architecture audit</strong> asks whether the change violated the baseline, and the <strong>steward returns for the reckoning</strong>, holding the result against its own north-star memo from checkpoint 1 — we said we were chasing this outcome: did we deliver it? Is it usable? Is it significant — or just code that passes tests? What only a human can judge, it escalates instead of faking a verdict.</p>
+    <p>Three movements, in strict order. First, a <strong>simplify pass</strong> cleans the full diff — duplication, dead weight, over-engineering — scaled to the change: four parallel lenses for L, one reviewer for M, an inline sweep for smaller work. It runs <em>before</em> the verdict so the verdict judges the code that will actually ship, and it can afford to be aggressive precisely because final verification comes right after it as a safety net. Then <strong>verify final</strong> checks every requirement end-to-end — and when the change is large or touches a sensitive area, it summons <strong>two adversarial judges with different responsibilities</strong>, blind, armed with the spec and the diff alone, each attacking from their own lens. Finally the circle closes: the <strong>architecture audit</strong> asks whether the change violated the baseline, and the <strong>steward returns for the reckoning</strong>, holding the result against its own north-star memo from checkpoint 1 — we said we were chasing this outcome: did we deliver it? Is it usable? Is it significant — or just code that passes tests? What only a human can judge, it escalates instead of faking a verdict.</p>
 
     <div class="tablewrap">
       <table>
